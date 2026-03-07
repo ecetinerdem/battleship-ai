@@ -19,6 +19,7 @@ const (
 
 func main() {
 	// Create players
+	human := NewHumanPlayer()
 
 	// Welcome Message
 	fmt.Println("\n=== WELCOME TO BATTLESHIP ===")
