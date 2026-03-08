@@ -39,6 +39,7 @@ func main() {
 
 	// Place the ships
 	// AI place ships (player does not know)
+	ai.PlaceShips()
 	// Human places ship
 
 	// Main game loop
