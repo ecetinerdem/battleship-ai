@@ -41,7 +41,7 @@ func main() {
 	// AI place ships (player does not know)
 	ai.PlaceShips()
 	// Human places ship
-
+	human.PlaceShips()
 	// Main game loop
 	gameOver := false
 	//playerTurn := true
