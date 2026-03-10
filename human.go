@@ -32,6 +32,40 @@ func NewHumanPlayer() *HumanPlayer {
 	return p
 }
 
+func (p *HumanPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Print("\nEnter target position (e.g. A0)")
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(strings.ToUpper(input))
+
+		if len(input) <= 2 {
+			fmt.Println("Invalid format, use format like 'A0'")
+			continue
+		}
+
+		if input[0] < 'A' || input[0] > 'j' {
+			fmt.Println("Column must be between A and J")
+			continue
+		}
+
+		col := int(input[0] - 'A')
+		rowStr := input[1:]
+
+		row, err := strconv.Atoi(rowStr)
+
+		if err != nil || row < 0 || row >= boardSize {
+			fmt.Println("Row must be between 0 and 9")
+			continue
+		}
+	}
+}
+
+func (p *HumanPlayer) GetBoard() *Board {
+	return &p.board
+}
+
 func (p *HumanPlayer) PlaceShips() {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -39,6 +73,8 @@ func (p *HumanPlayer) PlaceShips() {
 	fmt.Println("Place your ships on the board")
 	fmt.Println("Format: A0 H (A0 starting position, H=horizontal or V=vertical)")
 	fmt.Println("Positions are given as letter (A-J) for column and number (0-9) for row")
+	fmt.Println("Press Enter to continue...")
+	reader.ReadString('\n')
 
 	for _, shipType := range shipTypes {
 		for {

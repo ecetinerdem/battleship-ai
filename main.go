@@ -44,18 +44,26 @@ func main() {
 	human.PlaceShips()
 	// Main game loop
 	gameOver := false
-	//playerTurn := true
+	playerTurn := true
 
 	for !gameOver {
 		// Display the boards
+		printBoards(human.GetBoard(), ai.GetBoard())
 
 		// Players take turn
+		if playerTurn {
+			fmt.Println("\n=== YOUR TURN ===")
+			// Let player take turn
 
+		} else {
+
+		}
 		// Switch turns
 
 		// Check win condition
+
 	}
 
-	fmt.Println("\nThanks for playing Battleship! Press enter tı exit...")
+	fmt.Println("\nThanks for playing Battleship! Press enter to exit...")
 	reader.ReadString('\n')
 }
