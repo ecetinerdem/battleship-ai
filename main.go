@@ -54,11 +54,19 @@ func main() {
 		if playerTurn {
 			fmt.Println("\n=== YOUR TURN ===")
 			// Let player take turn
+			_, _ = human.TakeTurn(ai.GetBoard())
 
+			// Check win condition
+			if checkWinCondititon(ai.GetBoard()) {
+				gameOver = true
+				printBoards(human.GetBoard(), ai.GetBoard())
+				fmt.Println("\nYou Won! You sank all enemy ships")
+			}
 		} else {
 
 		}
 		// Switch turns
+		playerTurn = !playerTurn
 
 		// Check win condition
 

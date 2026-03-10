@@ -40,7 +40,7 @@ func (p *HumanPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
 		input, _ := reader.ReadString('\n')
 		input = strings.TrimSpace(strings.ToUpper(input))
 
-		if len(input) <= 2 {
+		if len(input) < 2 {
 			fmt.Println("Invalid format, use format like 'A0'")
 			continue
 		}
@@ -59,6 +59,32 @@ func (p *HumanPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
 			fmt.Println("Row must be between 0 and 9")
 			continue
 		}
+
+		if opponentBoard[row][col] == hit || opponentBoard[row][col] == miss {
+			fmt.Println("You already targeted that position")
+			continue
+		}
+
+		// Determine hit or miss
+		isHit := opponentBoard[row][col] == ship
+
+		if isHit {
+			opponentBoard[row][col] = hit
+			fmt.Println("HIT!")
+
+			// Check if ship sunk
+
+			isSunked, shipName := isShipSunk(opponentBoard, row, col, p, nil)
+
+			if isSunked {
+				fmt.Printf("You sunked a %s!\n", shipName)
+			}
+		} else {
+			opponentBoard[row][col] = miss
+			fmt.Println("MISS!")
+		}
+		time.Sleep(1 * time.Second)
+		return Position{row, col}, isHit
 	}
 }
 
