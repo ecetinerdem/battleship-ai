@@ -1,6 +1,19 @@
 package main
 
-import "math/rand"
+import (
+	"fmt"
+	"math/rand"
+)
+
+const (
+	// Heatmap weights
+	baseProbability   = 1   // Starting probability for valid cells
+	checkerBoardBonus = 1   // Bonus for the checkerboard pattern (less likeliy adjacent placements)
+	centerProximity   = 2   // Bonus for cells closer to the center
+	maxCenterDistance = 3   // How far from the center qualifies for the bonus
+	huntModeBoost     = 100 // Significant bonus for cells adjacent hits in hunt mode
+	shipFitBonus      = 2   // Base bonus multiplier for fitting a ship
+)
 
 type AIPlayer struct {
 	board         Board
@@ -54,21 +67,127 @@ func (p *AIPlayer) initializeHeatMap() {
 	for i := range boardSize {
 		for j := range boardSize {
 			// Start with base probability
-			p.heatMap[i][j] = 1
+			p.heatMap[i][j] = baseProbability
 
 			// Increase Probability in a checker board pattern
 			if (i+j)%2 == 0 {
-				p.heatMap[i][j] += 1
+				p.heatMap[i][j] += checkerBoardBonus
 			}
 
 			// Hihgher probability in the center
 			center := abs(i-boardSize/2) + abs(j-boardSize/2)
 
-			if center <= 3 {
-				p.heatMap[i][j] += 2
+			if center <= maxCenterDistance {
+				p.heatMap[i][j] += centerProximity
 			}
 		}
 	}
+}
+
+// UpdateHeatmap recalculates the probability heat map based on the current game state
+// It considers potential ship placements and priorities targets during huntmode
+func (p *AIPlayer) updateHeatMap(opponentBoard *Board) {
+	// Reset heatmap and clear previous probabilities
+	for i := range boardSize {
+		for j := range boardSize {
+			p.heatMap[i][j] = 0
+		}
+	}
+
+	// Calculate base probability
+	for r := range boardSize {
+		for c := range boardSize {
+			// Skip cells that have been already targeted
+			if opponentBoard[r][c] == hit || opponentBoard[r][c] == miss {
+				continue
+			}
+
+			// Assign base probability for valid untargeted cells
+			p.heatMap[r][c] = baseProbability
+
+			// Iterate through opponents ships that have not been sunk yet
+			for _, shipData := range p.potentilShips {
+				if shipData.sunk {
+					continue
+				}
+
+				shipSize := shipData.size
+
+				// Check horizantal fit: can and unsunk ship of this size fit horizontally starting here?
+				if c+shipSize <= boardSize {
+					canFitHorizantal := true
+					for k := range shipSize {
+						// Check if any cell needed for the ship is already a miss or a hit
+						if opponentBoard[r][c+k] == miss || opponentBoard[r][c+k] == hit {
+							canFitHorizantal = false
+							break
+						}
+
+						if canFitHorizantal {
+							// Increase probability based on ship size if it fits
+							p.heatMap[r][c] += shipFitBonus * shipSize
+						}
+					}
+				}
+				//Check vertical fit
+
+				if r+shipSize <= boardSize {
+					canFitVertical := true
+					for k := range shipSize {
+						// Check if any cell needed for the ship is already a miss or a hit
+						if opponentBoard[r+k][c] == miss || opponentBoard[r+k][c] == hit {
+							canFitVertical = false
+							break
+						}
+
+						if canFitVertical {
+							// Increase probability based on ship size if it fits
+							p.heatMap[r][c] += shipFitBonus * shipSize
+						}
+					}
+				}
+			}
+		}
+	}
+	// Apply huntmode boosts if applicable
+	if p.huntMode && len(p.hits) > 0 {
+		p.applyHuntModeBoosts(opponentBoard)
+	}
+
+}
+
+func (p *AIPlayer) applyHuntModeBoosts(opponentBoard *Board) {
+
+}
+
+func (p *AIPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
+	fmt.Println("\nAI is taking its turn...")
+
+	if p.huntMode {
+		fmt.Println("AI is hunt mode!")
+
+	} else {
+		fmt.Println("AI is probability target mode!")
+
+	}
+
+	// Update heat map based on game state
+
+	// Select a target based on strategy
+
+	// if in hunt mode...
+	// // find the highest probability cells
+	// // select a random target from the highest probability cells
+	// // if can't find one fall back to random targeting
+
+	// ...else do something else
+	// // find the highest probability cells
+	// // select a random target from the  cells
+
+	// Perform attack
+	// Check to see if we hit
+	// if we hit enter hunt mode
+	// check to see if ship was sunk
 }
 
 func (p *AIPlayer) GetBoard() *Board {
