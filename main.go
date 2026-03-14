@@ -63,10 +63,21 @@ func main() {
 				fmt.Println("\nYou Won! You sank all enemy ships")
 			}
 		} else {
-			fmt.Println("\n=== AI's TURN ===")
 
+			// fmt.Println("Heat Map:")
+			// for i := range boardSize {
+			// 	for j := range boardSize {
+			// 		fmt.Printf("%3d  ", ai.heatMap[i][j])
+			// 	}
+			// 	fmt.Println()
+			// }
+
+			fmt.Println("\n=== AI's TURN ===")
 			// Let AI take turn
-			_,_ : ai.TakeTurn(human.GetBoard())
+			_, _ = ai.TakeTurn(human.GetBoard())
+
+			// fmt.Println("Press enter to continue...")
+			// reader.ReadString('\n')
 
 			// Check win condition
 			if checkWinCondititon(human.GetBoard()) {
@@ -77,8 +88,6 @@ func main() {
 		}
 		// Switch turns
 		playerTurn = !playerTurn
-
-		// Check win condition
 
 	}
 

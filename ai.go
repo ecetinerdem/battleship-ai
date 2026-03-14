@@ -1,18 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
+	"os"
 )
 
 const (
 	// Heatmap weights
-	baseProbability   = 1   // Starting probability for valid cells
-	checkerBoardBonus = 1   // Bonus for the checkerboard pattern (less likeliy adjacent placements)
-	centerProximity   = 2   // Bonus for cells closer to the center
-	maxCenterDistance = 3   // How far from the center qualifies for the bonus
-	huntModeBoost     = 100 // Significant bonus for cells adjacent hits in hunt mode
-	shipFitBonus      = 2   // Base bonus multiplier for fitting a ship
+	baseProbability   = 1  // Starting probability for valid cells
+	checkerBoardBonus = 1  // Bonus for the checkerboard pattern (less likeliy adjacent placements)
+	centerProximity   = 2  // Bonus for cells closer to the center
+	maxCenterDistance = 3  // How far from the center qualifies for the bonus
+	huntModeBoost     = 15 // Significant bonus for cells adjacent hits in hunt mode
+	shipFitBonus      = 2  // Base bonus multiplier for fitting a ship
 )
 
 type AIPlayer struct {
@@ -118,10 +120,11 @@ func (p *AIPlayer) updateHeatMap(opponentBoard *Board) {
 							canFitHorizantal = false
 							break
 						}
-
-						if canFitHorizantal {
-							// Increase probability based on ship size if it fits
-							p.heatMap[r][c] += shipFitBonus * shipSize
+					}
+					if canFitHorizantal {
+						// Increase probability based on ship size if it fits
+						for k := range shipSize {
+							p.heatMap[r][c+k] += shipFitBonus
 						}
 					}
 				}
@@ -135,10 +138,11 @@ func (p *AIPlayer) updateHeatMap(opponentBoard *Board) {
 							canFitVertical = false
 							break
 						}
-
-						if canFitVertical {
-							// Increase probability based on ship size if it fits
-							p.heatMap[r][c] += shipFitBonus * shipSize
+					}
+					if canFitVertical {
+						// Increase probability based on ship size if it fits
+						for k := range shipSize {
+							p.heatMap[r+k][c] += shipFitBonus
 						}
 					}
 				}
@@ -289,7 +293,7 @@ func (p *AIPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
 				if p.heatMap[i][j] > maxProb && opponentBoard[i][j] != hit && opponentBoard[i][j] != miss {
 					maxProb = p.heatMap[i][j]
 					candidates = []Position{{i, j}}
-				} else if p.heatMap[i][j] == maxProb && opponentBoard[i][j] != hit && opponentBoard[i][j] != hit {
+				} else if p.heatMap[i][j] == maxProb && opponentBoard[i][j] != hit && opponentBoard[i][j] != miss {
 					candidates = append(candidates, Position{i, j})
 				}
 			}
@@ -336,6 +340,10 @@ func (p *AIPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
 		opponentBoard[targetRow][targetCol] = miss
 		fmt.Printf("AI targets %c%d... MISS!\n", 'A'+targetCol, targetRow)
 	}
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Press Enter to continue...")
+	reader.ReadString('\n')
 	return Position{targetRow, targetRow}, isHit
 }
 
