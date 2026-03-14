@@ -88,11 +88,7 @@ func (p *AIPlayer) initializeHeatMap() {
 // It considers potential ship placements and priorities targets during huntmode
 func (p *AIPlayer) updateHeatMap(opponentBoard *Board) {
 	// Reset heatmap and clear previous probabilities
-	for i := range boardSize {
-		for j := range boardSize {
-			p.heatMap[i][j] = 0
-		}
-	}
+	p.initializeHeatMap()
 
 	// Calculate base probability
 	for r := range boardSize {
@@ -157,7 +153,82 @@ func (p *AIPlayer) updateHeatMap(opponentBoard *Board) {
 }
 
 func (p *AIPlayer) applyHuntModeBoosts(opponentBoard *Board) {
+	// Determine the hit pattern: single hit, horizontal line or vertical line
+	isSingleHit := len(p.hits) == 1
+	isHorizontal := false
+	isVertical := false
 
+	if !isSingleHit {
+		firstHit := p.hits[0]
+		isHorizontal = true
+		isVertical = true
+
+		for i := 1; i < len(p.hits); i++ {
+			if p.hits[i].row != firstHit.row {
+				isHorizontal = false
+			}
+			if p.hits[i].col != firstHit.col {
+				isVertical = false
+			}
+		}
+
+		// If hits are not aligned horizontally or vertically, treat as multiple single points
+		// for adjacent checks
+
+		if !isHorizontal && !isVertical {
+			isSingleHit = true // fall back to checking adjacent cells for all hits if not clearly alligned
+		}
+
+		boostCell := func(r, c int) {
+			if r >= 0 && r < boardSize && c >= 0 && c < boardSize && opponentBoard[r][c] != miss && opponentBoard[r][c] != hit {
+				p.heatMap[r][c] += huntModeBoost
+			}
+		}
+
+		if isSingleHit {
+			// Boost all valid neighbours of the hit(s)
+			for _, hitPos := range p.hits {
+				boostCell(hitPos.row-1, hitPos.col) // up
+				boostCell(hitPos.row+1, hitPos.col) // down
+				boostCell(hitPos.row, hitPos.col-1) // left
+				boostCell(hitPos.row, hitPos.col+1) // right
+			}
+		} else if isHorizontal {
+			// Boost cells to the left and right of the horizontal line of hits
+			row := p.hits[0].row
+			minCol, maxCol := p.hits[0].col, p.hits[0].col
+
+			for _, hitPos := range p.hits {
+				if hitPos.col < minCol {
+					minCol = hitPos.col
+				}
+
+				if hitPos.col > maxCol {
+					maxCol = hitPos.col
+				}
+			}
+			boostCell(row, minCol-1) // Left of the line
+			boostCell(row, maxCol+1) // Right of the line
+
+		} else if isVertical {
+			// Boost cells above and below of the vertical line
+			col := p.hits[0].col
+			minRow, maxRow := p.hits[0].row, p.hits[0].row
+
+			for _, hitPos := range p.hits {
+				if hitPos.row < minRow {
+					minRow = hitPos.row
+				}
+				if hitPos.row > maxRow {
+					maxRow = hitPos.row
+				}
+			}
+			boostCell(minRow-1, col) // Above the line
+			boostCell(maxRow+1, col) // Below the line
+
+		}
+
+	}
 }
 
 func (p *AIPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
@@ -172,22 +243,100 @@ func (p *AIPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
 	}
 
 	// Update heat map based on game state
-
+	p.updateHeatMap(opponentBoard)
 	// Select a target based on strategy
+	var targetRow, targetCol int
 
 	// if in hunt mode...
-	// // find the highest probability cells
-	// // select a random target from the highest probability cells
-	// // if can't find one fall back to random targeting
+	if p.huntMode {
 
-	// ...else do something else
-	// // find the highest probability cells
-	// // select a random target from the  cells
+		// find the highest probability cells
+		maxProb := 0
+		candidates := []Position{}
+
+		for i := 0; i < boardSize; i++ {
+			for j := 0; j < boardSize; j++ {
+				if p.heatMap[i][j] > maxProb && opponentBoard[i][j] != hit && opponentBoard[i][j] != miss {
+					maxProb = p.heatMap[i][j]
+					candidates = []Position{{i, j}}
+				} else if p.heatMap[i][j] == maxProb && opponentBoard[i][j] != hit && opponentBoard[i][j] != miss {
+					candidates = append(candidates, Position{i, j})
+				}
+			}
+		}
+		// select a random target from the highest probability cells
+		if len(candidates) > 0 {
+			selected := candidates[rand.Intn(len(candidates))]
+			targetRow, targetCol = selected.row, selected.col
+		} else {
+			// if can't find one fall back to random targeting
+			for {
+				targetRow = rand.Intn(boardSize)
+				targetCol = rand.Intn(boardSize)
+				if opponentBoard[targetRow][targetCol] != hit && opponentBoard[targetRow][targetCol] != miss {
+					break
+				}
+			}
+		}
+		// ...else do something else
+	} else {
+		// find the highest probability cells
+		maxProb := 0
+		candidates := []Position{}
+
+		for i := range boardSize {
+			for j := range boardSize {
+				if p.heatMap[i][j] > maxProb && opponentBoard[i][j] != hit && opponentBoard[i][j] != miss {
+					maxProb = p.heatMap[i][j]
+					candidates = []Position{{i, j}}
+				} else if p.heatMap[i][j] == maxProb && opponentBoard[i][j] != hit && opponentBoard[i][j] != hit {
+					candidates = append(candidates, Position{i, j})
+				}
+			}
+		}
+
+		// select a random target from the  cells
+		// select a random target from the highest probability cells
+		if len(candidates) > 0 {
+			selected := candidates[rand.Intn(len(candidates))]
+			targetRow, targetCol = selected.row, selected.col
+		} else {
+			// if can't find one fall back to random targeting
+			for {
+				targetRow = rand.Intn(boardSize)
+				targetCol = rand.Intn(boardSize)
+				if opponentBoard[targetRow][targetCol] != hit && opponentBoard[targetRow][targetCol] != miss {
+					break
+				}
+			}
+		}
+	}
 
 	// Perform attack
+	isHit := opponentBoard[targetRow][targetCol] == ship
 	// Check to see if we hit
-	// if we hit enter hunt mode
-	// check to see if ship was sunk
+	if isHit {
+		opponentBoard[targetRow][targetCol] = hit
+		fmt.Printf(" AI targets %c%d... HIT!", 'A'+targetCol, targetRow)
+
+		// Update hit tracking
+		p.hits = append(p.hits, Position{targetRow, targetCol})
+		// if we hit enter hunt mode
+		p.huntMode = true
+
+		// check to see if ship was sunk
+		sunk, shipName := isShipSunk(opponentBoard, targetRow, targetCol, p.opponent.ships)
+		if sunk {
+			fmt.Printf("AI sunk your %s!n*n", shipName)
+			p.shipsSunk++
+			p.huntMode = false
+			p.hits = []Position{}
+		}
+	} else {
+		opponentBoard[targetRow][targetCol] = miss
+		fmt.Printf("AI targets %c%d... MISS!\n", 'A'+targetCol, targetRow)
+	}
+	return Position{targetRow, targetRow}, isHit
 }
 
 func (p *AIPlayer) GetBoard() *Board {

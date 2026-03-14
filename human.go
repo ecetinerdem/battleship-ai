@@ -74,7 +74,7 @@ func (p *HumanPlayer) TakeTurn(opponentBoard *Board) (Position, bool) {
 
 			// Check if ship sunk
 
-			isSunked, shipName := isShipSunk(opponentBoard, row, col, p, nil)
+			isSunked, shipName := isShipSunk(opponentBoard, row, col, p.opponent.ships)
 
 			if isSunked {
 				fmt.Printf("You sunked a %s!\n", shipName)
